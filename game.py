@@ -37,9 +37,10 @@ def next_board_state(board_state) -> np.ndarray:
 
     next_state = dead_state(*board_state.shape)
 
-    for x in range(len(board_state)):
-        for y in range(len(board_state[0])):
-
+    for x in range(board_state.shape[0]):
+        for y in range(board_state.shape[1]):
+            #TODO Alterar a forma como faço o loop
+            # Não tem em conta quando o x é 0 fora das duas outras ocasiões
             if y == 0:
                 if x == 0:
                     status = np.sum([board_state[x,y+1],board_state[x+1,y],board_state[x+1,y+1]])
@@ -54,7 +55,7 @@ def next_board_state(board_state) -> np.ndarray:
                 if x == 0:
                     status = np.sum([board_state[x,y-1],board_state[x+1,y],board_state[x+1,y-1]])
 
-                elif x == board_state.shape[0]:
+                elif x == board_state.shape[0]-1:
                     status = np.sum([board_state[x-1,y],board_state[x-1,y-1],board_state[x,y-1]])
 
                 else:
