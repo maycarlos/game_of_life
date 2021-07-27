@@ -1,12 +1,18 @@
 #!/usr/bin/python
+
+import sys
 import os
+import cursor
 import numpy as np
-import subprocess
-import time
+from time import sleep
+from colorama import init, Fore
+
+init(autoreset=True)
 
 ALIVE = 1
 DEAD = 0
 COLUMNS, LINES  = os.get_terminal_size(0)
+COLORS = [Fore.BLACK, Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN, Fore.WHITE]
 
 def dead_state(width: int, height: int) -> np.ndarray:
 
@@ -18,7 +24,7 @@ def random_state(width: int, height: int) -> np.ndarray:
 
     with np.nditer(state, op_flags=['readwrite']) as it:
         for i in it:
-            if np.random.random() >= 0.35:
+            if np.random.random() <= 0.35:
                 i[...] = ALIVE
             else:
                 i[...] = DEAD
@@ -44,7 +50,7 @@ def cell_status(coords: tuple, board_state: np.ndarray) -> DEAD | ALIVE:
             if board_state[i,j] == ALIVE:
                 neightbors_alive += 1
 
-    if board_state[x][y] == ALIVE:
+    if board_state[x,y] == ALIVE:
         if neightbors_alive <= 1:
             return DEAD
         elif neightbors_alive <= 3:
@@ -57,13 +63,13 @@ def cell_status(coords: tuple, board_state: np.ndarray) -> DEAD | ALIVE:
         else:
             return DEAD
 
-def next_board_state(board_state) -> np.ndarray:
+def next_board_state(board_state: np.ndarray) -> np.ndarray:
     """
     Regras:
-        1- Uma célula viva com 0 ou 1 vizinho morre.  
-        2- Uma célula viva com 2 ou 3 vizinhos continua viva.  
-        3- Uma célula viva com mais do que 3 vizinhos morre.  
-        4- Uma célula morta com 3 vizinhos vivos torna-se viva.  
+        1- Uma célula viva com 0 ou 1 vizinho morre.
+        2- Uma célula viva com 2 ou 3 vizinhos continua viva.
+        3- Uma célula viva com mais do que 3 vizinhos morre.
+        4- Uma célula morta com 3 vizinhos vivos torna-se viva.
     """
 
     next_state = dead_state(*board_state.shape)
@@ -76,7 +82,6 @@ def next_board_state(board_state) -> np.ndarray:
 def render(board_state) -> None:
 
     # Tive que mudar para uma lista porque não sabia trabalhar muito bem com chararray do numpy
-    
     render_state = board_state.tolist()
 
     dead_or_alive = {
@@ -86,18 +91,25 @@ def render(board_state) -> None:
 
     renderized = [''.join([dead_or_alive[render_state[x][y]] * 2 for x in range(len(render_state))]) for y in range(len(render_state[0]))]
 
-    print("\n".join(renderized))
+    print(Fore.YELLOW + "\n".join(renderized))
 
 def main() -> None:
     # Tive que dividir o numero de colunas por dois porque está a dar um espaço a mais a pixels adjecentes
-    subprocess.run('clear')
+    clear = lambda : os.system('cls' if os.name == 'nt' else 'clear')
+    clear()
+    cursor.hide()
     game = random_state(COLUMNS//2, LINES)
     render(game)
     while True:
-        render(game := next_board_state(game))
+        try:
+            render(game := next_board_state(game))
 
-        time.sleep(0.2)
-        subprocess.run('clear')
+            sleep(1/75)
+            clear()
+        except KeyboardInterrupt as e:
+            cursor.show()
+            clear()
+            sys.exit(e)
 
 if __name__ == "__main__":
     main()
