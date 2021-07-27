@@ -12,7 +12,6 @@ init(autoreset=True)
 ALIVE = 1
 DEAD = 0
 COLUMNS, LINES  = os.get_terminal_size(0)
-COLORS = [Fore.BLACK, Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN, Fore.WHITE]
 
 def dead_state(width: int, height: int) -> np.ndarray:
 
