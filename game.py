@@ -1,25 +1,61 @@
 #!/usr/bin/python
-
+import os
 import numpy as np
+import subprocess
+import time
+
 ALIVE = 1
 DEAD = 0
+COLUMNS, LINES  = os.get_terminal_size(0)
 
-def dead_state(width, height) -> np.ndarray:
+def dead_state(width: int, height: int) -> np.ndarray:
 
     return np.zeros((width, height), dtype=np.int0)
 
-def random_state(width, height) -> np.ndarray:
+def random_state(width: int, height: int) -> np.ndarray:
 
     state = dead_state(width, height)
 
     with np.nditer(state, op_flags=['readwrite']) as it:
         for i in it:
-            if np.random.random() >= 0.5:
+            if np.random.random() >= 0.35:
                 i[...] = ALIVE
             else:
                 i[...] = DEAD
 
     return state
+
+def cell_status(coords: tuple, board_state: np.ndarray) -> DEAD | ALIVE:
+    # Estava a complicar demasiado o problema, no exemplo está muito mais simples
+
+    height = board_state.shape[1]
+    width = board_state.shape[0]
+    x = coords[0]
+    y = coords[1]
+    neightbors_alive = 0
+
+    for i in range((x-1), (x+1)+1):
+        if i < 0 or i >= width: continue
+
+        for j in range((y-1), (y+1)+1):
+            if j < 0 or j >= height: continue
+            if i == x and j == y: continue
+
+            if board_state[i,j] == ALIVE:
+                neightbors_alive += 1
+
+    if board_state[x][y] == ALIVE:
+        if neightbors_alive <= 1:
+            return DEAD
+        elif neightbors_alive <= 3:
+            return ALIVE
+        else:
+            return DEAD
+    else:
+        if neightbors_alive == 3:
+            return ALIVE
+        else:
+            return DEAD
 
 def next_board_state(board_state) -> np.ndarray:
     """
@@ -29,58 +65,18 @@ def next_board_state(board_state) -> np.ndarray:
         3- Uma célula viva com mais do que 3 vizinhos morre.  
         4- Uma célula morta com 3 vizinhos vivos torna-se viva.  
     """
-    # TODO fazer a soma dos valores do vizinhos e alterar o estado da celula consoante o resultado
-    # se for -∞, 1]  celula = DEAD
-    # se for  [2, 3] pass
-    # se for  ]3, +∞ celula = dead
-    # se o celulad DEAD e com soma = 3 celula = ALIVE
 
     next_state = dead_state(*board_state.shape)
 
     for x in range(board_state.shape[0]):
         for y in range(board_state.shape[1]):
-            #TODO Alterar a forma como faço o loop
-            # Não tem em conta quando o x é 0 fora das duas outras ocasiões
-            if y == 0:
-                if x == 0:
-                    status = np.sum([board_state[x,y+1],board_state[x+1,y],board_state[x+1,y+1]])
-
-                elif x == board_state.shape[0]-1:
-                    status = np.sum([board_state[x-1,y],board_state[x,y+1],board_state[x-1,y+1]])
-
-                else:
-                    status = np.sum([board_state[x-1,y],board_state[x+1,y],board_state[x-1,y+1],board_state[x,y+1]], board_state[x+1,y+1])
-
-            elif y == board_state.shape[1]-1:
-                if x == 0:
-                    status = np.sum([board_state[x,y-1],board_state[x+1,y],board_state[x+1,y-1]])
-
-                elif x == board_state.shape[0]-1:
-                    status = np.sum([board_state[x-1,y],board_state[x-1,y-1],board_state[x,y-1]])
-
-                else:
-                    status = np.sum([board_state[x-1,y],board_state[x+1,y],board_state[x-1,y-1],board_state[x,y-1]], board_state[x+1,y-1])
-            else:
-                status = np.sum([board_state[x-1,y-1],board_state[x,y-1],board_state[x+1,y-1],
-                    board_state[x-1, y],board_state[x+1,y],
-                    board_state[x-1,y+1],board_state[x,y+1],board_state[x+1,y+1]])
-
-            if board_state[x,y] == ALIVE and status <= 1:
-                next_state[x,y] = DEAD #UNDER_POP
-
-            elif board_state[x,y] == ALIVE and 2 <= status <= 3:
-                pass
-
-            elif board_state[x,y] == ALIVE and status > 3:
-                next_state[x,y] = DEAD #OVER_POP
-
-            elif board_state[x,y] == DEAD and status == 3:
-                next_state[x,y] = ALIVE
-
+            next_state[x,y] = cell_status((x,y), board_state)
     return next_state
 
 def render(board_state) -> None:
 
+    # Tive que mudar para uma lista porque não sabia trabalhar muito bem com chararray do numpy
+    
     render_state = board_state.tolist()
 
     dead_or_alive = {
@@ -92,12 +88,16 @@ def render(board_state) -> None:
 
     print("\n".join(renderized))
 
-def main():
-    coisa = random_state(3,3)
+def main() -> None:
+    # Tive que dividir o numero de colunas por dois porque está a dar um espaço a mais a pixels adjecentes
+    subprocess.run('clear')
+    game = random_state(COLUMNS//2, LINES)
+    render(game)
+    while True:
+        render(game := next_board_state(game))
 
-    render(coisa)
-    print("\n")
-    render(next_board_state(coisa))
+        time.sleep(0.2)
+        subprocess.run('clear')
 
 if __name__ == "__main__":
     main()
